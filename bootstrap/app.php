@@ -1,8 +1,10 @@
 <?php
 
+use App\Modules\Booking\Exceptions\BookingRuleViolation;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -16,6 +18,14 @@ return Application::configure(basePath: dirname(__DIR__))
         //
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        $exceptions->dontReport([BookingRuleViolation::class]);
+        $exceptions->render(function (BookingRuleViolation $exception): JsonResponse {
+            return response()->json([
+                'message' => $exception->getMessage(),
+                'errors' => [$exception->field => [$exception->getMessage()]],
+            ], 422);
+        });
+
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
